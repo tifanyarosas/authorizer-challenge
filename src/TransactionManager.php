@@ -22,7 +22,7 @@ class TransactionManager {
     }
 
     function makeTransaction(Account $account, string $merchant, int $amount, \DateTime $time): OperationResult {
-        $transaction = new Transaction($merchant, $amount, $time);
+        $transaction = new Transaction($account, $merchant, $amount, $time);
         $violations = $this->validateTransaction($account, $transaction);
         if (empty($violations)) {
             $account->setAvaliableLimit($account->getAvaliableLimit() - $amount);
@@ -53,7 +53,8 @@ class TransactionManager {
     }
 
     private function isDoubleTransaction(Transaction $transaction): bool {
-        if (empty($this->transactions) || !($lastTransaction = $this->getLastTransaction($transaction->getMerchant()))) {
+        if (empty($this->transactions) || 
+        !($lastTransaction = $this->getLastTransaction($transaction->getMerchant(), $transaction->getAccount()))) {
             return false;
         }
         if ($this->getTimeDifferenceInMinutes($transaction, $lastTransaction) < 2) {
@@ -62,9 +63,9 @@ class TransactionManager {
         return false;
     }
 
-    private function getLastTransaction(string $merchant) {
+    private function getLastTransaction(string $merchant, Account $account) {
         foreach(array_reverse($this->transactions) as $transaction) {
-            if ($transaction->getMerchant() == $merchant) {
+            if ($transaction->getMerchant() == $merchant && $transaction->getAccount() == $account) {
                 return $transaction;
             }
         }
