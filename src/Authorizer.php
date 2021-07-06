@@ -6,7 +6,7 @@ use Authorizer\exceptions\ThereIsNotAccountException;
 
 require './vendor/autoload.php';
 
-class MainApp {
+class Authorizer {
 
     const ACCOUNT_CREATION_OPERATION = "account";
     const TRANSACTION_OPERATION = "transaction";
@@ -32,7 +32,7 @@ class MainApp {
                     throw new InvalidOperationException();
                     break;
             }
-            var_dump($result);
+            echo $result . PHP_EOL;
         }
     }
 
@@ -66,13 +66,8 @@ if ($handle) {
     }
     fclose($handle);
 } else {
-    // error opening the file.
+    throw new \Exception('Error opening operations file');
 } 
 $parsedOperations = (new OperationParser())->parseOperations($operations);
-//var_dump($parsedOperations);
-
-$mainApp = new MainApp(AccountCreator::getInstance(), TransactionManager::getInstance());
-$mainApp->processOperations($parsedOperations);
-
-
-//$input = trim(fgets(STDIN));
+$authorizer = new Authorizer(AccountCreator::getInstance(), TransactionManager::getInstance());
+$authorizer->processOperations($parsedOperations);

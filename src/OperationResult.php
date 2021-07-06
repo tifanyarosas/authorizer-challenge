@@ -12,6 +12,14 @@ class OperationResult {
         $this->violations = $violations;
     }
 
+    function getAccount(): Account {
+        return $this->account;
+    }
+
+    function getViolations(): array {
+        return $this->violations;
+    }
+
     function getJsonRepresentation() {
         $result = [
             "account" => $this->account->getArrayRepresentation(),

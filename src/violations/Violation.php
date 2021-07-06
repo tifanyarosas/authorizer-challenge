@@ -1,4 +1,5 @@
 <?php
+
 namespace Authorizer\violations;
 
 interface Violation {

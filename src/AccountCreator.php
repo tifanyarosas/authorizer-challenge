@@ -19,7 +19,6 @@ class AccountCreator {
 
     function createAccount(bool $activedCard, int $avaliableLimit): OperationResult {
         $violations = [];
-        var_dump($this->account);
         if ($this->account != null) {
             $violations[] = new AccountAlreadyInitializedViolation();
             return new OperationResult($this->account, $violations);
@@ -30,5 +29,9 @@ class AccountCreator {
 
     function getAccount() {
         return $this->account;
+    }
+
+    function setAccount(Account $account = null) {
+        $this->account = $account;
     }
 }
