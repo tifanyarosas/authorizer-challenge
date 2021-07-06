@@ -2,44 +2,89 @@
 
 namespace Authorizer;
 
-use Authorizer\exceptions\CardIsNotActiveException;
+use Authorizer\violations\CardIsNotActiveViolation;
+use Authorizer\violations\DoubleTransactionViolation;
+use Authorizer\violations\HighFrecuencyTransactionViolation;
+use Authorizer\violations\InsufficientLimitViolation;
 
-class TransactionManager extends Singleton {
+class TransactionManager {
 
+    private static $instance = null;
     private $transactions = [];
-
-    function makeTransaction(Account $account, string $merchant, int $amount, \DateTime $time) {
-        $transaction = new Transaction($merchant, $amount, $time);
-        if ($this->assertIsPossibleMakeTransaction($account, $transaction)) {
-            $this->addTransactionToList($transaction);
+  
+    private function __construct() {}
+ 
+    static function getInstance() {
+        if (self::$instance == null) {
+            self::$instance = new TransactionManager();
         }
+        return self::$instance;
     }
 
-    private function assertIsPossibleMakeTransaction(Account $account, Transaction $transaction): bool {
-        if (!$account->getActivedCard()) {
-            throw new CardIsNotActiveException();
+    function makeTransaction(Account $account, string $merchant, int $amount, \DateTime $time): OperationResult {
+        $transaction = new Transaction($merchant, $amount, $time);
+        $violations = $this->validateTransaction($account, $transaction);
+        if (empty($violations)) {
+            $account->setAvaliableLimit($account->getAvaliableLimit() - $amount);
+            $this->addTransactionToList($transaction);
+        }
+        return new OperationResult($account, $violations);
+    }
+
+    private function validateTransaction(Account $account, Transaction $transaction): array {
+        $violations = [];
+        if (!$account->getActiveCard()) {
+            $violations[] = new CardIsNotActiveViolation();
         }
         if (!$this->hasEnoughLimit($account, $transaction)) {
-            throw new InsufficientLimitException();
+            $violations[] = new InsufficientLimitViolation();
         }
-        if ($this->isDoubleTransaction()) {
-            throw new DoubleTransactionException();
+        if ($this->isDoubleTransaction($transaction)) {
+            $violations[] = new DoubleTransactionViolation();
         }
-        if ($this->isHighFrecuencyTransaction()) {
-            throw new HighFrecuencyTransactionException();
+        if ($this->isHighFrecuencyTransaction($transaction)) {
+            $violations[] = new HighFrecuencyTransactionViolation();
         }
+        return $violations;
     }
 
     private function hasEnoughLimit(Account $account, Transaction $transaction) {
         return $account->getAvaliableLimit() - $transaction->getAmount() >= 0;
     }
 
-    private function isDoubleTransaction(): bool {
+    private function isDoubleTransaction(Transaction $transaction): bool {
+        if (empty($this->transactions) || !($lastTransaction = $this->getLastTransaction($transaction->getMerchant()))) {
+            return false;
+        }
+        if ($this->getTimeDifferenceInMinutes($transaction, $lastTransaction) < 2) {
+            return true;
+        }
         return false;
     }
 
-    private function isHighFrecuencyTransaction(): bool {
+    private function getLastTransaction(string $merchant) {
+        foreach(array_reverse($this->transactions) as $transaction) {
+            if ($transaction->getMerchant() == $merchant) {
+                return $transaction;
+            }
+        }
+        return null;
+    }
+
+    private function isHighFrecuencyTransaction(Transaction $transaction): bool {
+        $countTransactions = count($this->transactions);
+        if ($countTransactions < 3) {
+            return false;
+        }
+        $previousLastTransaction = $this->transactions[$countTransactions - 2];
+        if ($this->getTimeDifferenceInMinutes($transaction, $previousLastTransaction) < 2) {
+            return true;
+        }
         return false;
+    }
+
+    private function getTimeDifferenceInMinutes(Transaction $t1, Transaction $t2): int {
+        return abs(($t1->getTime()->getTimestamp() - $t2->getTime()->getTimestamp())) / 60;
     }
 
     private function addTransactionToList(Transaction $transaction) {

@@ -2,43 +2,40 @@
 
 namespace Authorizer;
 
+use Authorizer\exceptions\NegativeAvaliableLimitException;
+
 class Account {
 
-    private $activedCard;
+    private $activeCard;
     private $avaliableLimit;
 
-    function __construct(bool $activedCard, int $avaliableLimit = 0) {
-        $this->activedCard = $activedCard;
+    function __construct(bool $activeCard, int $avaliableLimit = 0) {
+        $this->activeCard = $activeCard;
         $this->avaliableLimit = $avaliableLimit;
     }
 
-    function getActivedCard(): bool {
-        return $this->activedCard;
+    function getActiveCard(): bool {
+        return $this->activeCard;
     }
 
     function getAvaliableLimit(): int {
         return $this->avaliableLimit;
     }
 
-    function setActivedCard(bool $active) {
-        $this->activedCard = $active;
+    function setActiveCard(bool $active) {
+        $this->activeCard = $active;
     }
 
     function setAvaliableLimit(int $limit) {
+        if ($limit < 0) {
+            throw new NegativeAvaliableLimitException();
+        }
         $this->avaliableLimit = $limit;
     }
 
-    function modifyAvaliableLimit(int $limit) {
-        $newLimit = $this->getAvaliableLimit() + $limit;
-        if ($newLimit < 0) {
-            //throw Exception('asd');
-        }
-        $this->setAvaliableLimit($newLimit);
-    }
-
-    function getJsonRepresentation(): array {
+    function getArrayRepresentation(): array {
         return [
-            "activedCard" => $this->getActivedCard(),
+            "activeCard" => $this->getActiveCard(),
             "avaliableLimit" => $this->getAvaliableLimit()
         ];
     }
