@@ -1,7 +1,11 @@
 # authorizer-challenge
 
 ### How to run it
+php composer.phar update
 php src/Authorizer.php operations
+
+### How to run tests
+./vendor/bin/phpunit tests
 
 ### Prerequisites
 - PHP 8

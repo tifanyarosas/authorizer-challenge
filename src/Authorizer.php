@@ -3,11 +3,11 @@
 namespace Authorizer;
 use Authorizer\exceptions\InvalidOperationException;
 use Authorizer\exceptions\ThereIsNotAccountException;
-
+error_reporting(E_ERROR | E_PARSE);
 require './vendor/autoload.php';
 
 class Authorizer {
-    
+
     private $accountCreator;
     private $transactionManager;
 
@@ -56,15 +56,17 @@ class Authorizer {
     }
 }
 
+
 $handle = fopen($argv[1], "r");
-if ($handle) {
-    while (($line = fgets($handle)) !== false) {
-        $operations[] = $json = json_decode($line, true); 
-    }
-    fclose($handle);
-} else {
-    throw new \Exception('Error opening operations file');
-} 
+if (!$handle) {
+    echo 'Error opening operations file' . PHP_EOL;
+    return;
+}
+while (($line = fgets($handle)) !== false) {
+    $operations[] = $json = json_decode($line, true); 
+}
+fclose($handle);
+    
 $parsedOperations = (new OperationParser())->parseOperations($operations);
 $authorizer = new Authorizer(AccountCreator::getInstance(), TransactionManager::getInstance());
 $authorizer->processOperations($parsedOperations);
