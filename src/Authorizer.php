@@ -7,10 +7,7 @@ use Authorizer\exceptions\ThereIsNotAccountException;
 require './vendor/autoload.php';
 
 class Authorizer {
-
-    const ACCOUNT_CREATION_OPERATION = "account";
-    const TRANSACTION_OPERATION = "transaction";
-
+    
     private $accountCreator;
     private $transactionManager;
 
